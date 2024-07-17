@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">Cafeteria Java</string>
+    <string name="login">Login</string>
+    <string name="email">Email</string>
+    <string name="password">password</string>
+    <string name="click_to_register">Click to register</string>
+    <string name="register">Register</string>
+    <string name="click_to_login">Click to login</string>
+    <string name="user_details">User details</string>
+    <string name="logout">Logout</string>
+    <string name="אישור">אישור</string>
+    <string name="שלום">שלום לך!</string>
+    <string name="הרשמה">הרשמה</string>
+    <string name="הרשמות">הרשמות</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="hello_cart">hello cart</string>
+    <string name="hello_profile">hello profile</string>
+    <string name="cart">Cart</string>
+    <string name="profile">Profile</string>
+    <string name="home">Home</string>
+    <string name="products">מוצרים</string>
+    <string name="לקופה">לקופה</string>
+    <string name="vieworders">הזמנות</string>
+</resources>

@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "418210234021",
+    "project_id": "cafeteria-429c3",
+    "storage_bucket": "cafeteria-429c3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418210234021:android:e5e92375683c6b9da8174c",
+        "android_client_info": {
+          "package_name": "com.example.cafeteria"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUDN4k523bih1hxGf9m3Cn-kV1R2YXDOQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418210234021:android:f93db101887053f4a8174c",
+        "android_client_info": {
+          "package_name": "com.example.cafeteriajava"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUDN4k523bih1hxGf9m3Cn-kV1R2YXDOQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418210234021:android:b83547d79e2763cea8174c",
+        "android_client_info": {
+          "package_name": "com.example.cafeteriatest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUDN4k523bih1hxGf9m3Cn-kV1R2YXDOQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
