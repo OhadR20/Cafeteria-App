@@ -1,10 +1,13 @@
 package com.example.cafeteriajava;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -13,6 +16,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import java.util.concurrent.TimeUnit;
 import com.example.cafeteriajava.eventbus.MyUpdateCartEvent;
 import com.example.cafeteriajava.model.CartModel;
 import com.google.android.material.badge.BadgeDrawable;
@@ -85,6 +92,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Load initial cart count
         countCartItems();
+
+
+
+        OneTimeWorkRequest initialWorkRequest = new OneTimeWorkRequest.Builder(OrderCheckWorker.class).build();
+        WorkManager.getInstance(this).enqueue(initialWorkRequest);
+
+
+
+
     }
 
     @Override
@@ -97,6 +113,27 @@ public class MainActivity extends AppCompatActivity {
         if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_ACCESS_FINE_LOCATION);
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
+        }
+
+        Intent serviceIntent = new Intent(this, FirebaseOrderListenerService.class);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel("YOUR_CHANNEL_ID", "Order Updates", NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription("Notifications for order completion");
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+            startForegroundService(serviceIntent);  // Use foreground service for background processes
+
+        }
+        else {
+            startService(serviceIntent);
+        }
+
+
+
     }
 
 

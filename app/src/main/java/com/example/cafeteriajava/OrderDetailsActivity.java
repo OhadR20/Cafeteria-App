@@ -1,6 +1,7 @@
 package com.example.cafeteriajava;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
@@ -51,20 +52,41 @@ public class OrderDetailsActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 orderDetailsList.clear();
+                Log.d("OrderDetailsActivity", "Loading details for Order ID: " + orderId);
+
                 for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
-                    CartModel item = itemSnapshot.getValue(CartModel.class);
-                    if (item != null) {
-                        Map<String, String> orderDetail = new HashMap<>();
-                        orderDetail.put("productName", item.getName());
-                        orderDetail.put("productQuantity", "כמות: " + item.getQuantity());
-                        orderDetailsList.add(orderDetail);
+
+                    // Skip the "completed" field or any non-Map data
+                    if (itemSnapshot.getKey().equals("completed") || !(itemSnapshot.getValue() instanceof Map)) {
+                        Log.d("OrderDetailsActivity", "Skipping non-CartModel data: " + itemSnapshot.getKey());
+                        continue; // Skip this iteration
+                    }
+
+                    try {
+                        // Try to convert the snapshot to CartModel
+                        CartModel item = itemSnapshot.getValue(CartModel.class);
+                        if (item != null) {
+                            Map<String, String> orderDetail = new HashMap<>();
+                            orderDetail.put("productName", item.getName());
+                            orderDetail.put("productQuantity", "כמות: " + item.getQuantity());
+                            orderDetailsList.add(orderDetail);
+                        } else {
+                            Log.e("OrderDetailsActivity", "CartModel is null for key: " + itemSnapshot.getKey());
+                        }
+                    } catch (Exception e) {
+                        Log.e("OrderDetailsActivity", "Error parsing itemSnapshot: ", e);
                     }
                 }
-                adapter.notifyDataSetChanged();
+
+                // Update the adapter on the main thread
+                runOnUiThread(() -> {
+                    adapter.notifyDataSetChanged();
+                });
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("OrderDetailsActivity", "Failed to load order details: " + error.getMessage());
                 Toast.makeText(OrderDetailsActivity.this, "Failed to load order details", Toast.LENGTH_SHORT).show();
             }
         });

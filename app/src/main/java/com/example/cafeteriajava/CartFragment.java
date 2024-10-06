@@ -29,6 +29,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -162,14 +163,30 @@ public class CartFragment extends Fragment implements ICartLoadListener {
                                 public void onDataChange(@NonNull DataSnapshot orderSnapshot) {
                                     long orderNumber = generateUniqueOrderNumber(orderSnapshot);
                                     DatabaseReference newOrderRef = ordersRef.child(String.valueOf(orderNumber));
-                                    newOrderRef.setValue(cartModels);
 
-                                    FirebaseDatabase.getInstance()
-                                            .getReference("Cart")
-                                            .child(currentuser)
-                                            .removeValue();
+                                    // Save each cart item starting with index 0 (like before)
+                                    for (int i = 0; i < cartModels.size(); i++) {
+                                        newOrderRef.child(String.valueOf(i))  // Use i to start numbering from 0
+                                                .setValue(cartModels.get(i));
+                                    }
 
-                                    Snackbar.make(mainLayout, "Order placed successfully!", Snackbar.LENGTH_LONG).show();
+                                    // Set the 'completed' field directly under the order id
+                                    newOrderRef.child("UserId").setValue(currentuser);
+                                    newOrderRef.child("completed").setValue(0)
+                                            .addOnSuccessListener(aVoid -> {
+                                                // Clear the cart after placing the order
+                                                FirebaseDatabase.getInstance()
+                                                        .getReference("Cart")
+                                                        .child(currentuser)
+                                                        .removeValue();
+
+                                                // Show success message
+                                                Snackbar.make(mainLayout, "Order placed successfully!", Snackbar.LENGTH_LONG).show();
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Snackbar.make(mainLayout, e.getMessage(), Snackbar.LENGTH_LONG).show();
+                                            });
+
                                 }
 
                                 @Override
@@ -189,6 +206,9 @@ public class CartFragment extends Fragment implements ICartLoadListener {
                     }
                 });
     }
+
+
+
 
     private long generateUniqueOrderNumber(DataSnapshot orderSnapshot) {
         Set<Long> existingOrderNumbers = new HashSet<>();

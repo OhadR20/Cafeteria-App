@@ -12,7 +12,19 @@
         android:layout_weight="1"
         android:text="ID"
         android:textColor="#000000"
-        android:textSize="20sp" />
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btnDeleteOrder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="מחק הזמנה" /> <!-- Delete Order button -->
+
+    <Button
+        android:id="@+id/btnMarkComplete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="הזמנה מוכנה" />
 
     <TextView
         android:id="@+id/tvTotalPrice"

@@ -41,7 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_toEndOf="@id/txtPrice"
             android:layout_alignBottom="@id/txtPrice"
-            app:tint="@color/white"
+            app:tint="@color/black"
             android:layout_marginStart="8dp"/>
         </RelativeLayout>
 
