@@ -19,6 +19,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ViewOrdersActivity extends AppCompatActivity {
 
@@ -43,7 +44,8 @@ public class ViewOrdersActivity extends AppCompatActivity {
     private void loadOrdersFromFirebase() {
         FirebaseDatabase.getInstance()
                 .getReference("Orders")
-                .addListenerForSingleValueEvent(new ValueEventListener() {
+                .orderByChild("timestamp") // Order by timestamp
+                .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         orderList.clear();
@@ -52,16 +54,18 @@ public class ViewOrdersActivity extends AppCompatActivity {
                             double totalPrice = 0;
                             List<CartModel> cartItems = new ArrayList<>();
                             for (DataSnapshot itemSnapshot : orderSnapshot.getChildren()) {
-                                Log.d("FirebaseData", "Item Snapshot: " + itemSnapshot.getValue());
-                                try {
-                                    CartModel cartModel = itemSnapshot.getValue(CartModel.class);
-                                    if (cartModel != null) {
-                                        cartModel.setKey(itemSnapshot.getKey());
-                                        totalPrice += cartModel.getTotalPrice();
-                                        cartItems.add(cartModel);
+                                // Avoid parsing non-cart-item nodes like "UserId", "timestamp", etc.
+                                if (itemSnapshot.getValue() instanceof Map) {
+                                    try {
+                                        CartModel cartModel = itemSnapshot.getValue(CartModel.class);
+                                        if (cartModel != null) {
+                                            cartModel.setKey(itemSnapshot.getKey());
+                                            totalPrice += cartModel.getTotalPrice();
+                                            cartItems.add(cartModel);
+                                        }
+                                    } catch (Exception e) {
+                                        Log.e("FirebaseError", "Error converting data", e);
                                     }
-                                } catch (Exception e) {
-                                    Log.e("FirebaseError", "Error converting data", e);
                                 }
                             }
                             OrderModel orderModel = new OrderModel(orderId, totalPrice, cartItems);
@@ -77,4 +81,6 @@ public class ViewOrdersActivity extends AppCompatActivity {
                     }
                 });
     }
+
+
 }

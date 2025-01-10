@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -157,6 +158,7 @@ public class CartFragment extends Fragment implements ICartLoadListener {
                             }
 
                             DatabaseReference ordersRef = FirebaseDatabase.getInstance().getReference("Orders");
+                            DatabaseReference userOrdersRef = FirebaseDatabase.getInstance().getReference("users").child(currentuser).child("orders");
 
                             ordersRef.addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
@@ -164,29 +166,33 @@ public class CartFragment extends Fragment implements ICartLoadListener {
                                     long orderNumber = generateUniqueOrderNumber(orderSnapshot);
                                     DatabaseReference newOrderRef = ordersRef.child(String.valueOf(orderNumber));
 
-                                    // Save each cart item starting with index 0 (like before)
+                                    // Save each cart item starting with index 0
                                     for (int i = 0; i < cartModels.size(); i++) {
-                                        newOrderRef.child(String.valueOf(i))  // Use i to start numbering from 0
-                                                .setValue(cartModels.get(i));
+                                        newOrderRef.child(String.valueOf(i)).setValue(cartModels.get(i));
                                     }
 
-                                    // Set the 'completed' field directly under the order id
-                                    newOrderRef.child("UserId").setValue(currentuser);
-                                    newOrderRef.child("completed").setValue(0)
-                                            .addOnSuccessListener(aVoid -> {
-                                                // Clear the cart after placing the order
-                                                FirebaseDatabase.getInstance()
-                                                        .getReference("Cart")
-                                                        .child(currentuser)
-                                                        .removeValue();
+                                    // Set additional fields: UserId, completed status, and timestamp
+                                    Map<String, Object> orderDetails = new HashMap<>();
+                                    orderDetails.put("UserId", currentuser);
+                                    orderDetails.put("completed", 0);
+                                    orderDetails.put("timestamp", com.google.firebase.database.ServerValue.TIMESTAMP);
 
-                                                // Show success message
-                                                Snackbar.make(mainLayout, "Order placed successfully!", Snackbar.LENGTH_LONG).show();
-                                            })
-                                            .addOnFailureListener(e -> {
-                                                Snackbar.make(mainLayout, e.getMessage(), Snackbar.LENGTH_LONG).show();
-                                            });
+                                    // Save order details to both "Orders" and "users/{userId}/orders/"
+                                    newOrderRef.updateChildren(orderDetails).addOnSuccessListener(aVoid -> {
+                                        // Save to user's profile
+                                        userOrdersRef.child(String.valueOf(orderNumber)).updateChildren(orderDetails);
 
+                                        // Clear the cart after placing the order
+                                        FirebaseDatabase.getInstance()
+                                                .getReference("Cart")
+                                                .child(currentuser)
+                                                .removeValue();
+
+                                        // Show success message
+                                        Snackbar.make(mainLayout, "Order placed successfully!", Snackbar.LENGTH_LONG).show();
+                                    }).addOnFailureListener(e -> {
+                                        Snackbar.make(mainLayout, e.getMessage(), Snackbar.LENGTH_LONG).show();
+                                    });
                                 }
 
                                 @Override
@@ -206,6 +212,8 @@ public class CartFragment extends Fragment implements ICartLoadListener {
                     }
                 });
     }
+
+
 
 
 

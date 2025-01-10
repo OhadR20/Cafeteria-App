@@ -28,7 +28,7 @@ import java.util.Map;
 
 public class Register extends AppCompatActivity {
     Button btnReg;
-    TextInputEditText etEmail, etPassword;
+    TextInputEditText etEmail, etPassword, etFirstName, etLastName;;
     TextView tvloginNow;
     ProgressBar progressBar;
     FirebaseAuth mAuth;
@@ -55,6 +55,8 @@ public class Register extends AppCompatActivity {
         tvloginNow = findViewById(R.id.LoginNow);
         etEmail = findViewById(R.id.email);
         etPassword = findViewById(R.id.password);
+        etFirstName = findViewById(R.id.firstname);
+        etLastName = findViewById(R.id.lastname);
         switchAdmin = findViewById(R.id.switchAdmin);
         progressBar = findViewById(R.id.progressBar);
         mAuth = FirebaseAuth.getInstance();
@@ -71,10 +73,13 @@ public class Register extends AppCompatActivity {
         btnReg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String email, password;
+                String email, password, firstname, lastName;
                 progressBar.setVisibility(View.VISIBLE);
                 email = String.valueOf(etEmail.getText());
                 password = String.valueOf(etPassword.getText());
+                firstname = String.valueOf(etFirstName.getText());
+                lastName = String.valueOf(etLastName.getText());
+
                 if (TextUtils.isEmpty(email)) {
                     Toast.makeText(Register.this, "Enter email", Toast.LENGTH_SHORT).show();
                     progressBar.setVisibility(View.GONE);
@@ -85,37 +90,47 @@ public class Register extends AppCompatActivity {
                     progressBar.setVisibility(View.GONE);
                     return;
                 }
+                if (TextUtils.isEmpty(firstname)) {
+                    Toast.makeText(Register.this, "Enter first name", Toast.LENGTH_SHORT).show();
+                    progressBar.setVisibility(View.GONE);
+                    return;
+                }
+                if (TextUtils.isEmpty(lastName)) {
+                    Toast.makeText(Register.this, "Enter last name", Toast.LENGTH_SHORT).show();
+                    progressBar.setVisibility(View.GONE);
+                    return;
+                }
+
                 mAuth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 progressBar.setVisibility(View.GONE);
                                 if (task.isSuccessful()) {
-                                    // Sign in success, update UI with the signed-in user's information
-                                    Log.d("Register", "createUserWithEmail:success");
-                                    Toast.makeText(Register.this, "User created successfully", Toast.LENGTH_SHORT).show();
                                     FirebaseUser user = mAuth.getCurrentUser();
-                                    saveUserData(user);
+                                    saveUserData(user, firstname, lastName);
+                                    Toast.makeText(Register.this, "User created successfully", Toast.LENGTH_SHORT).show();
                                     Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                                     startActivity(intent);
                                     finish();
                                 } else {
-                                    // If sign in fails, display a message to the user.
-                                    Log.w("Register", "createUserWithEmail:failure", task.getException());
                                     Toast.makeText(Register.this, "Registration failed.", Toast.LENGTH_SHORT).show();
                                 }
                             }
                         });
             }
         });
+
     }
 
-    private void saveUserData(FirebaseUser user) {
+    private void saveUserData(FirebaseUser user, String firstName, String lastName) {
         if (user != null) {
             DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("users");
             Map<String, Object> userData = new HashMap<>();
             userData.put("email", user.getEmail());
             userData.put("admin", switchAdmin.isChecked());
+            userData.put("firstname", firstName);
+            userData.put("lastname", lastName);
             databaseReference.child(user.getUid()).setValue(userData);
         }
     }

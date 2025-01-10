@@ -55,15 +55,15 @@ public class OrderDetailsActivity extends AppCompatActivity {
                 Log.d("OrderDetailsActivity", "Loading details for Order ID: " + orderId);
 
                 for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
-
-                    // Skip the "completed" field or any non-Map data
-                    if (itemSnapshot.getKey().equals("completed") || !(itemSnapshot.getValue() instanceof Map)) {
-                        Log.d("OrderDetailsActivity", "Skipping non-CartModel data: " + itemSnapshot.getKey());
-                        continue; // Skip this iteration
+                    // Skip metadata fields
+                    if ("UserId".equals(itemSnapshot.getKey()) ||
+                            "completed".equals(itemSnapshot.getKey()) ||
+                            "timestamp".equals(itemSnapshot.getKey())) {
+                        continue;
                     }
 
                     try {
-                        // Try to convert the snapshot to CartModel
+                        // Parse the cart item
                         CartModel item = itemSnapshot.getValue(CartModel.class);
                         if (item != null) {
                             Map<String, String> orderDetail = new HashMap<>();
@@ -79,9 +79,7 @@ public class OrderDetailsActivity extends AppCompatActivity {
                 }
 
                 // Update the adapter on the main thread
-                runOnUiThread(() -> {
-                    adapter.notifyDataSetChanged();
-                });
+                runOnUiThread(() -> adapter.notifyDataSetChanged());
             }
 
             @Override
@@ -91,4 +89,5 @@ public class OrderDetailsActivity extends AppCompatActivity {
             }
         });
     }
+
 }

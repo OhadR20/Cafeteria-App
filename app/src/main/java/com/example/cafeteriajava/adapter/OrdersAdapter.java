@@ -15,8 +15,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cafeteriajava.OrderDetailsActivity;
 import com.example.cafeteriajava.R;
 import com.example.cafeteriajava.model.OrderModel;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 
@@ -40,9 +43,34 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.OrderViewH
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
         OrderModel order = orderList.get(position);
-        holder.tvOrderId.setText(order.getOrderId());
+
+        // Fetch the user first name and display it
+        fetchUserFirstName(order.getOrderId(), holder.tvOrderId);
+
         holder.tvTotalPrice.setText(String.valueOf(order.getTotalPrice()));
 
+        // Fetch the "completed" field directly from Firebase
+        DatabaseReference orderRef = FirebaseDatabase.getInstance().getReference("Orders").child(order.getOrderId()).child("completed");
+        orderRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    int completed = snapshot.getValue(Integer.class);
+                    if (completed == 1) {
+                        holder.itemView.setBackgroundColor(context.getResources().getColor(android.R.color.holo_green_light)); // Green
+                    } else {
+                        holder.itemView.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_light)); // Red
+                    }
+                } else {
+                    holder.itemView.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_light)); // Default to red if "completed" is missing
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                holder.itemView.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_light)); // Handle errors gracefully
+            }
+        });
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, OrderDetailsActivity.class);
@@ -50,45 +78,100 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.OrderViewH
             context.startActivity(intent);
         });
 
-        // Set up the "Complete" button to update the completed field in Firebase
-        holder.btnMarkComplete.setOnClickListener(v -> {
-            markOrderAsComplete(order.getOrderId());
-        });
+        holder.btnMarkComplete.setOnClickListener(v -> markOrderAsComplete(order.getOrderId()));
 
-        // Set up the "Delete" button to delete the order
-        holder.btnDeleteOrder.setOnClickListener(v -> {
-            deleteOrder(order.getOrderId(), position);
-        });
-
+        holder.btnDeleteOrder.setOnClickListener(v -> deleteOrder(order.getOrderId(), position));
     }
+
 
     @Override
     public int getItemCount() {
         return orderList.size();
     }
 
-    // Method to update the "completed" field in Firebase
-    private void markOrderAsComplete(String orderId) {
-        DatabaseReference orderRef = FirebaseDatabase.getInstance().getReference("Orders").child(orderId);
-        orderRef.child("completed").setValue(1).addOnSuccessListener(aVoid -> {
-            Toast.makeText(context, "Order marked as completed!", Toast.LENGTH_SHORT).show();
-        }).addOnFailureListener(e -> {
-            Toast.makeText(context, "Failed to update order", Toast.LENGTH_SHORT).show();
+    private void fetchUserFirstName(String orderId, TextView tvOrderId) {
+        DatabaseReference orderRef = FirebaseDatabase.getInstance().getReference("Orders").child(orderId).child("UserId");
+
+        orderRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String userId = snapshot.getValue(String.class);
+
+                    if (userId != null) {
+                        // Fetch the user's first name using the UserId
+                        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("firstname");
+                        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot userSnapshot) {
+                                if (userSnapshot.exists()) {
+                                    String firstName = userSnapshot.getValue(String.class);
+                                    tvOrderId.setText(firstName); // Set the first name to tvOrderId
+                                } else {
+                                    tvOrderId.setText("Unknown User"); // Handle case where firstname is not found
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                                tvOrderId.setText("Error"); // Handle errors
+                            }
+                        });
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                tvOrderId.setText("Error"); // Handle errors
+            }
         });
     }
 
-    // Method to delete the order from Firebase
+    private void markOrderAsComplete(String orderId) {
+        DatabaseReference orderRef = FirebaseDatabase.getInstance().getReference("Orders").child(orderId);
+        DatabaseReference userOrdersRef = FirebaseDatabase.getInstance().getReference("users");
+
+        orderRef.child("completed").setValue(1).addOnSuccessListener(aVoid -> {
+            orderRef.child("UserId").addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        String userId = snapshot.getValue(String.class);
+                        userOrdersRef.child(userId).child("orders").child(orderId).child("completed").setValue(1)
+                                .addOnSuccessListener(aVoid1 -> Toast.makeText(context, "Order marked as completed!", Toast.LENGTH_SHORT).show())
+                                .addOnFailureListener(e -> Toast.makeText(context, "Failed to update user order", Toast.LENGTH_SHORT).show());
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Toast.makeText(context, "Failed to retrieve UserId", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }).addOnFailureListener(e -> Toast.makeText(context, "Failed to update global order", Toast.LENGTH_SHORT).show());
+    }
+
     private void deleteOrder(String orderId, int position) {
         DatabaseReference orderRef = FirebaseDatabase.getInstance().getReference("Orders").child(orderId);
+
         orderRef.removeValue().addOnSuccessListener(aVoid -> {
-            Toast.makeText(context, "Order deleted successfully", Toast.LENGTH_SHORT).show();
-            // Remove the order from the local list and notify the adapter
-            orderList.remove(position);
-            notifyItemRemoved(position);
+            if (position >= 0 && position < orderList.size()) {
+                orderList.remove(position);
+                notifyItemRemoved(position);
+                notifyItemRangeChanged(position, orderList.size()); // Optional, ensures the list stays updated
+            }
+
+            if (orderList.isEmpty()) {
+                Toast.makeText(context, "No more orders to display", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(context, "Order deleted successfully", Toast.LENGTH_SHORT).show();
+            }
         }).addOnFailureListener(e -> {
             Toast.makeText(context, "Failed to delete order", Toast.LENGTH_SHORT).show();
         });
     }
+
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
 
@@ -100,8 +183,7 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.OrderViewH
             tvOrderId = itemView.findViewById(R.id.tvOrderId);
             tvTotalPrice = itemView.findViewById(R.id.tvTotalPrice);
             btnMarkComplete = itemView.findViewById(R.id.btnMarkComplete);
-            btnDeleteOrder = itemView.findViewById(R.id.btnDeleteOrder); // Initialize delete button
-
+            btnDeleteOrder = itemView.findViewById(R.id.btnDeleteOrder);
         }
     }
 }
