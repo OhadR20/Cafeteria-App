@@ -37,7 +37,7 @@ import java.util.UUID;
 public class ProfileFragment extends Fragment {
 
     TextView tvDetails, tvAdminStatus;
-    Button btnLogout, btnViewOrders;
+    Button btnLogout, btnAdmin;
     FirebaseAuth mAuth;
     FirebaseUser user;
 
@@ -78,7 +78,7 @@ public class ProfileFragment extends Fragment {
 
         tvAdminStatus = rootView.findViewById(R.id.tvAdminStatus);
         btnLogout = rootView.findViewById(R.id.btnLogout);
-        btnViewOrders = rootView.findViewById(R.id.ViewOrders); // Added view orders button
+        btnAdmin = rootView.findViewById(R.id.Admin); // Added view orders button
         tvDetails = rootView.findViewById(R.id.tvDetails);
         string1EditText = rootView.findViewById(R.id.ssid);
         string2EditText = rootView.findViewById(R.id.password);
@@ -113,7 +113,7 @@ public class ProfileFragment extends Fragment {
             }
         });
 
-        btnViewOrders.setOnClickListener(new View.OnClickListener() {
+        btnAdmin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
@@ -122,7 +122,7 @@ public class ProfileFragment extends Fragment {
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         Boolean isAdmin = snapshot.child("admin").getValue(Boolean.class);
                         if (isAdmin != null && isAdmin) {
-                            Intent intent = new Intent(getActivity(), ViewOrdersActivity.class);
+                            Intent intent = new Intent(getActivity(), AdminActivity.class);
                             startActivity(intent);
                         } else {
                             Toast.makeText(getContext(), "You are not an admin", Toast.LENGTH_SHORT).show();

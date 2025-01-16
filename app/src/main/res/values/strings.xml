@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Cafeteria Java</string>
+    <string name="app_name">מזנון בגבול הלב</string>
     <string name="login">Login</string>
     <string name="email">Email</string>
     <string name="password">password</string>
@@ -22,4 +22,5 @@
     <string name="products">מוצרים</string>
     <string name="לקופה">לקופה</string>
     <string name="vieworders">הזמנות</string>
+    <string name="admin">מנהלים</string>
 </resources>
