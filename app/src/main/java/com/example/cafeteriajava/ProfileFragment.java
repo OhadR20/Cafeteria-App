@@ -80,9 +80,6 @@ public class ProfileFragment extends Fragment {
         btnLogout = rootView.findViewById(R.id.btnLogout);
         btnAdmin = rootView.findViewById(R.id.Admin); // Added view orders button
         tvDetails = rootView.findViewById(R.id.tvDetails);
-        string1EditText = rootView.findViewById(R.id.ssid);
-        string2EditText = rootView.findViewById(R.id.password);
-        sendButton = rootView.findViewById(R.id.sendButton);
 
         user = mAuth.getCurrentUser();
         if (user == null) {
@@ -104,14 +101,7 @@ public class ProfileFragment extends Fragment {
             }
         });
 
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String string1 = string1EditText.getText().toString();
-                String string2 = string2EditText.getText().toString();
-                sendData(string1, string2);
-            }
-        });
+
 
         btnAdmin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -143,68 +133,6 @@ public class ProfileFragment extends Fragment {
     }
 
 
-
-
-    public void sendData(String string1, String string2) {
-        bluetoothDevice = getPairedDevice();
-        if (bluetoothDevice == null) {
-            Toast.makeText(getContext(), "Bluetooth device not found", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        try {
-            if (bluetoothSocket == null || !bluetoothSocket.isConnected()) {
-                if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_BLUETOOTH_CONNECT);
-                    return;
-                }
-                bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(MY_UUID);
-                bluetoothSocket.connect();
-            }
-
-            OutputStream outputStream = bluetoothSocket.getOutputStream();
-            outputStream.write(string1.getBytes());
-            outputStream.write("\n".getBytes());
-            outputStream.write(string2.getBytes());
-            Toast.makeText(getContext(), "Data sent", Toast.LENGTH_SHORT).show();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(getContext(), "Error sending data", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_ACCESS_FINE_LOCATION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getPairedDevice();
-            } else {
-                Toast.makeText(getContext(), "Permission required", Toast.LENGTH_SHORT).show();
-            }
-        } else if (requestCode == REQUEST_BLUETOOTH_CONNECT) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getPairedDevice();
-            } else {
-                Toast.makeText(getContext(), "Bluetooth connect permission required", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    public BluetoothDevice getPairedDevice() {
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_BLUETOOTH_CONNECT);
-            return null;
-        }
-        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
-        if (pairedDevices.size() > 0) {
-            for (BluetoothDevice device : pairedDevices) {
-                if (device.getName().equals("ESP32")) { // Replace "ESP32" with your device's name if different
-                    return device;
-                }
-            }
-        }
-        return null;
-    }
 
 
     private void checkAdminStatus(String uid) {

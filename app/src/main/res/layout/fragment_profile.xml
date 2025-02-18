@@ -38,31 +38,6 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="30dp"/>
 
-    <EditText
-        android:id="@+id/ssid"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColorHint="#000000"
-        android:textColor="#000000"
-        android:hint="Enter Wifi SSID" />
 
-    <EditText
-        android:id="@+id/password"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColorHint="#000000"
-        android:textColor="#000000"
-        android:hint="Enter Wifi password"
-        android:layout_below="@id/ssid"
-        android:layout_marginTop="16dp" />
-
-    <Button
-        android:id="@+id/sendButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Send"
-        android:layout_below="@id/password"
-        android:layout_marginTop="16dp"
-        android:layout_centerHorizontal="true"/>
 
 </LinearLayout>
