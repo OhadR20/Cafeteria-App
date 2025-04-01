@@ -38,17 +38,19 @@ public class ProfileFragment extends Fragment {
 
     TextView tvDetails, tvAdminStatus;
     Button btnLogout, btnAdmin;
-    FirebaseAuth mAuth;
-    FirebaseUser user;
+    FirebaseAuth mAuth; // Firebase Authentication instance to handle user authentication
+    FirebaseUser user;  // Firebase user object representing the current logged in user
 
     private EditText string1EditText, string2EditText;
     private Button sendButton;
 
+    // Bluetooth variables
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothSocket bluetoothSocket;
     private BluetoothDevice bluetoothDevice;
 
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    // Request codes for enabling Bluetooth and requesting permissions
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_ACCESS_FINE_LOCATION = 2;
     private static final int REQUEST_BLUETOOTH_CONNECT = 3;
@@ -58,16 +60,17 @@ public class ProfileFragment extends Fragment {
         super.onCreate(savedInstanceState);
         mAuth = FirebaseAuth.getInstance();
 
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter(); // Get the default Bluetooth adapter for the device
         if (bluetoothAdapter == null) {
             Toast.makeText(getContext(), "Bluetooth is not available", Toast.LENGTH_SHORT).show();
             getActivity().finish();
             return;
         }
 
+        // If Bluetooth is not enabled, request to enable it
         if (!bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT); // Launch an activity to prompt the user to enable Bluetooth
         }
     }
 
@@ -81,21 +84,21 @@ public class ProfileFragment extends Fragment {
         btnAdmin = rootView.findViewById(R.id.Admin); // Added view orders button
         tvDetails = rootView.findViewById(R.id.tvDetails);
 
-        user = mAuth.getCurrentUser();
+        user = mAuth.getCurrentUser(); // Get the currently logged in user from Firebase Authentication
         if (user == null) {
             Intent intent = new Intent(getActivity(), Login.class);
             startActivity(intent);
             getActivity().finish();
         } else {
-            tvDetails.setText(user.getEmail());
-            checkAdminStatus(user.getUid());
+            tvDetails.setText(user.getEmail()); // If user is logged in, display the user's email
+            checkAdminStatus(user.getUid()); // Check and update the admin status of the user by accessing the Firebase Database
         }
 
         btnLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(getActivity(), Login.class);
+                FirebaseAuth.getInstance().signOut(); // Sign out the current user from Firebase Authentication
+                Intent intent = new Intent(getActivity(), Login.class); // Redirect the user to the Login activity after logout
                 startActivity(intent);
                 getActivity().finish();
             }
@@ -103,25 +106,27 @@ public class ProfileFragment extends Fragment {
 
 
 
+        // Set up the admin button click listener to check admin privileges before navigating to AdminActivity
         btnAdmin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // Create a reference to the current user's data in the "users" of the Firebase Database
                 DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
                 userRef.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        Boolean isAdmin = snapshot.child("admin").getValue(Boolean.class);
+                        Boolean isAdmin = snapshot.child("admin").getValue(Boolean.class); // Retrieve the "admin" status from the database as a Boolean
                         if (isAdmin != null && isAdmin) {
-                            Intent intent = new Intent(getActivity(), AdminActivity.class);
+                            Intent intent = new Intent(getActivity(), AdminActivity.class); // If the user is marked as admin, open AdminActivity
                             startActivity(intent);
                         } else {
-                            Toast.makeText(getContext(), "You are not an admin", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "You are not an admin", Toast.LENGTH_SHORT).show(); // If the user is not an admin, display a message
                         }
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(getContext(), "Failed to check admin status", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Failed to check admin status", Toast.LENGTH_SHORT).show(); // If there is an error while checking admin status, display an error message
                     }
                 });
             }
@@ -135,13 +140,16 @@ public class ProfileFragment extends Fragment {
 
 
 
+
+    // Method to check the admin status of the current user using their unique ID
     private void checkAdminStatus(String uid) {
-        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("users").child(uid);
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("users").child(uid);  // Create a reference to the user's data in the Firebase "users"
         databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
+                if (snapshot.exists()) { // If user data exists in the database, check the admin flag
                     Boolean isAdmin = snapshot.child("admin").getValue(Boolean.class);
+                    // Update the tvAdminStatus TextView based on the admin status
                     if (isAdmin != null && isAdmin) {
                         tvAdminStatus.setText("You are an admin");
                     } else {
@@ -152,7 +160,7 @@ public class ProfileFragment extends Fragment {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(getContext(), "Failed to retrieve admin status", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Failed to retrieve admin status", Toast.LENGTH_SHORT).show(); // If there is an error retrieving admin status, display an error message
             }
         });
     }

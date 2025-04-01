@@ -44,27 +44,29 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String currentuser = FirebaseAuth.getInstance().getCurrentUser().getUid();
-    private BottomNavigationView bottomNavigationView;
+    private String currentuser = FirebaseAuth.getInstance().getCurrentUser().getUid(); // Get the unique ID of the current user from Firebase Authentication
+    private BottomNavigationView bottomNavigationView; // Declare the BottomNavigationView for navigating between different fragments
 
+    // Declare Bluetooth related variables
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothSocket bluetoothSocket;
     private BluetoothDevice bluetoothDevice;
 
-    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");  // Define a universally unique identifier (UUID) for Bluetooth connection (commonly used for SPP)
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_ACCESS_FINE_LOCATION = 2;
     private static final int REQUEST_BLUETOOTH_CONNECT = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        super.onCreate(savedInstanceState); // Call parent class onCreate
+        setContentView(R.layout.activity_main); // Set the layout for the main activity
 
 
-        bottomNavigationView = findViewById(R.id.bottomNavigationView);
-        bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
+        bottomNavigationView = findViewById(R.id.bottomNavigationView); // Bind the bottom navigation view from the layout
+        bottomNavigationView.setOnNavigationItemSelectedListener(item -> { // Set up a listener for bottom navigation item selections
             Fragment selectedFragment = null;
+            // Switch between fragments based on the selected menu item
             switch (item.getItemId()) {
                 case R.id.home:
                     selectedFragment = new HomeFragment();
@@ -77,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
             }
             if (selectedFragment != null) {
-                loadFragment(selectedFragment);
+                loadFragment(selectedFragment); // Load the chosen fragment
             }
             return true;
         });
@@ -95,8 +97,8 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        OneTimeWorkRequest initialWorkRequest = new OneTimeWorkRequest.Builder(OrderCheckWorker.class).build();
-        WorkManager.getInstance(this).enqueue(initialWorkRequest);
+        OneTimeWorkRequest initialWorkRequest = new OneTimeWorkRequest.Builder(OrderCheckWorker.class).build(); // Create a one-time work request to check orders using WorkManager
+        WorkManager.getInstance(this).enqueue(initialWorkRequest); // Enqueue the work request to execute the OrderCheckWorker task
 
 
 
@@ -106,25 +108,27 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) { // Check if the Bluetooth adapter is null or disabled
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE); // Create an intent to request enabling Bluetooth
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT); // Request Bluetooth enablement
         }
-        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_ACCESS_FINE_LOCATION);
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { // Check if the ACCESS_FINE_LOCATION permission is granted (required for Bluetooth scanning)
+            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_ACCESS_FINE_LOCATION); // Request ACCESS_FINE_LOCATION permission from the user
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
         }
 
-        Intent serviceIntent = new Intent(this, FirebaseOrderListenerService.class);
+        Intent serviceIntent = new Intent(this, FirebaseOrderListenerService.class); // Create an intent to start a service that listens for order updates from Firebase
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Create a notification channel for order update notifications
             NotificationChannel channel = new NotificationChannel("YOUR_CHANNEL_ID", "Order Updates", NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("Notifications for order completion");
+            // Get the notification manager system service
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+            notificationManager.createNotificationChannel(channel); // Create the channel
             startForegroundService(serviceIntent);  // Use foreground service for background processes
 
         }
@@ -138,10 +142,10 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private void loadFragment(Fragment fragment) {
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.frame_layout, fragment);
-        transaction.commit();
+    private void loadFragment(Fragment fragment) { // Helper method to load a given fragment into the container layout
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction(); // Begin a fragment transaction
+        transaction.replace(R.id.frame_layout, fragment); // Replace the current fragment in the container
+        transaction.commit(); // Commit the transaction to display the fragment
     }
 
     @Override
@@ -150,39 +154,41 @@ public class MainActivity extends AppCompatActivity {
         EventBus.getDefault().unregister(this);
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = true) // Subscribe to the MyUpdateCartEvent from EventBus
     public void onUpdateCart(MyUpdateCartEvent event) {
-        countCartItems();
+        countCartItems(); // When a cart update event is received, recount the cart items and update the badge
     }
 
-    private void countCartItems() {
-        List<CartModel> cartModels = new ArrayList<>();
-        FirebaseDatabase.getInstance().getReference("Cart")
+    private void countCartItems() { // Method to count the number of items in the user's cart from Firebase Realtime Database
+        List<CartModel> cartModels = new ArrayList<>(); // Create a list to hold CartModel objects
+        FirebaseDatabase.getInstance().getReference("Cart") // Access the "Cart" node in the Firebase database under the current user's ID
                 .child(currentuser)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
+                .addListenerForSingleValueEvent(new ValueEventListener() { // Add a single event listener to fetch the current cart data once
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        int cartCount = 0;
+                        int cartCount = 0; // Initialize cart count
                         for (DataSnapshot cartSnapshot : snapshot.getChildren()) {
-                            CartModel cartModel = cartSnapshot.getValue(CartModel.class);
+                            CartModel cartModel = cartSnapshot.getValue(CartModel.class); // Convert the snapshot to a CartModel object
                             if (cartModel != null) {
-                                cartCount += cartModel.getQuantity();
+                                cartCount += cartModel.getQuantity(); // Increase the cart count by the quantity of each cart item
                             }
                         }
-                        showCartBadge(cartCount);
+                        showCartBadge(cartCount); // Update the cart badge with the calculated count
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        // If there is an error retrieving the data, show a Snackbar with the error message
                         Snackbar.make(findViewById(R.id.frame_layout), error.getMessage(), Snackbar.LENGTH_LONG).show();
                     }
                 });
     }
 
+    // Method to display the cart count badge on the BottomNavigationView
     void showCartBadge(int cartCount) {
-        BadgeDrawable badge = bottomNavigationView.getOrCreateBadge(R.id.cart);
-        badge.setVisible(cartCount > 0);
-        badge.setNumber(cartCount);
+        BadgeDrawable badge = bottomNavigationView.getOrCreateBadge(R.id.cart); // Get or create a badge for the cart menu item
+        badge.setVisible(cartCount > 0); // Set the badge to be visible only if there is at least one item in the cart
+        badge.setNumber(cartCount); // Set the badge number to the cart count
 
         // Adjust badge position
         badge.setVerticalOffset(10); // Adjust this value as needed to position the badge higher

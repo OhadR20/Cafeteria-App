@@ -34,14 +34,16 @@ public class ViewOrdersActivity extends AppCompatActivity {
 
         ordersRecyclerView = findViewById(R.id.ordersRecyclerView);
         ordersRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        orderList = new ArrayList<>();
+        orderList = new ArrayList<>(); // Initialize the order list
         ordersAdapter = new OrdersAdapter(this, orderList);
-        ordersRecyclerView.setAdapter(ordersAdapter);
+        ordersRecyclerView.setAdapter(ordersAdapter); // Set the adapter to the RecyclerView to display orders
 
         loadOrdersFromFirebase();
     }
 
+    // Method to load orders from Firebase
     private void loadOrdersFromFirebase() {
+        // Access the "Orders" in Firebase, ordering by the "timestamp" field
         FirebaseDatabase.getInstance()
                 .getReference("Orders")
                 .orderByChild("timestamp") // Order by timestamp
@@ -50,26 +52,27 @@ public class ViewOrdersActivity extends AppCompatActivity {
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         orderList.clear();
                         for (DataSnapshot orderSnapshot : snapshot.getChildren()) {
-                            String orderId = orderSnapshot.getKey();
-                            double totalPrice = 0;
-                            List<CartModel> cartItems = new ArrayList<>();
+                            String orderId = orderSnapshot.getKey(); // Get the order ID from the snapshot's key
+                            double totalPrice = 0; // Initialize total price for the order
+                            List<CartModel> cartItems = new ArrayList<>(); // Create a list to hold cart items for this order
                             for (DataSnapshot itemSnapshot : orderSnapshot.getChildren()) {
                                 // Avoid parsing non-cart-item nodes like "UserId", "timestamp", etc.
                                 if (itemSnapshot.getValue() instanceof Map) {
                                     try {
-                                        CartModel cartModel = itemSnapshot.getValue(CartModel.class);
+                                        CartModel cartModel = itemSnapshot.getValue(CartModel.class); // Convert the snapshot into a CartModel
                                         if (cartModel != null) {
-                                            cartModel.setKey(itemSnapshot.getKey());
-                                            totalPrice += cartModel.getTotalPrice();
-                                            cartItems.add(cartModel);
+                                            cartModel.setKey(itemSnapshot.getKey()); // Set the unique key for the cart item
+                                            totalPrice += cartModel.getTotalPrice(); // Accumulate the total price of the order
+                                            cartItems.add(cartModel); // Add the cart item to the list
                                         }
                                     } catch (Exception e) {
                                         Log.e("FirebaseError", "Error converting data", e);
                                     }
                                 }
                             }
+                            // Create an OrderModel instance using the order ID, total price, and list of cart items
                             OrderModel orderModel = new OrderModel(orderId, totalPrice, cartItems);
-                            orderList.add(orderModel);
+                            orderList.add(orderModel); // Add the order model to the order list
                         }
                         ordersAdapter.notifyDataSetChanged();
                     }

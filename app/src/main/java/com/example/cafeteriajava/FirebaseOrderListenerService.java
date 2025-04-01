@@ -17,12 +17,13 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 public class FirebaseOrderListenerService extends Service {
-    private DatabaseReference ordersRef;
+    private DatabaseReference ordersRef; // Reference to the user's orders in the Firebase database
     private ValueEventListener orderCompleteListener;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
+        // Build a notification to show that the service is actively listening for order updates
         Notification notification = new NotificationCompat.Builder(this, "order_update_channel")
                 .setContentTitle("Order Update Listener")
                 .setContentText("Listening for order status updates...")
@@ -31,9 +32,12 @@ public class FirebaseOrderListenerService extends Service {
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)  // Mark as ongoing service
                 .build();
 
+        // Start this service in the foreground
         startForeground(1, notification); // Start the service in foreground
 
+        // Get the current user's unique ID from Firebase Authentication
         String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        // Reference the current user's orders in the Firebase database
         ordersRef = FirebaseDatabase.getInstance().getReference("Orders").child(currentUserId);
 
         // Start listening to order completion status
@@ -42,17 +46,22 @@ public class FirebaseOrderListenerService extends Service {
         return START_STICKY; // Ensures the service continues running
     }
 
+    // Method to attach a Firebase listener for order completion events
     private void startOrderCompleteListener(String userId) {
         orderCompleteListener = ordersRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for (DataSnapshot orderSnapshot : dataSnapshot.getChildren()) {
+                    // Retrieve the user ID associated with the order
                     String orderUserId = orderSnapshot.child("UserId").getValue(String.class);
 
+                    // Only process orders that belong to the current user
                     if (userId.equals(orderUserId)) { // Only process orders for the current user
+                        // Get the "completed" status of the order
                         int completed = orderSnapshot.child("completed").getValue(Integer.class);
-                        String orderId = orderSnapshot.getKey();
+                        String orderId = orderSnapshot.getKey(); // Retrieve the order's unique key
 
+                        // If the order is marked as complete and a notification hasn't been shown yet
                         if (completed == 1 && !isNotificationAlreadyShown(orderId)) {
                             // Trigger local notification for completed order
                             sendOrderCompleteNotification(orderId);
@@ -69,6 +78,7 @@ public class FirebaseOrderListenerService extends Service {
         });
     }
 
+    // Method to trigger a notification
     private void sendOrderCompleteNotification(String orderId) {
         NotificationHelper.showOrderCompletedNotification(this, orderId);
     }
@@ -88,11 +98,13 @@ public class FirebaseOrderListenerService extends Service {
     }
 
 
+    // Check if a notification for the given order ID has already been shown
     private boolean isNotificationAlreadyShown(String orderId) {
         SharedPreferences preferences = getApplicationContext().getSharedPreferences("OrderPrefs", Context.MODE_PRIVATE);
         return preferences.getBoolean(orderId, false); // Returns true if the orderId is already marked as shown
     }
 
+    // Mark that a notification has been shown for the given order ID
     private void markNotificationAsShown(String orderId) {
         SharedPreferences preferences = getApplicationContext().getSharedPreferences("OrderPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();

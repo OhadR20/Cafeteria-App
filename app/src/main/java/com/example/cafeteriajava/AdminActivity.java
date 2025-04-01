@@ -42,10 +42,12 @@ public class AdminActivity extends AppCompatActivity {
     private Button sendButton;
 
 
+    // Declare Bluetooth related variables
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothSocket bluetoothSocket;
     private BluetoothDevice bluetoothDevice;
 
+    // Define a universally unique identifier (UUID) for Bluetooth connection
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_ACCESS_FINE_LOCATION = 2;
@@ -56,21 +58,21 @@ public class AdminActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin);
-        mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseAuth.getInstance(); // Initialize Firebase Authentication instance
         btnViewOrders = findViewById(R.id.ViewOrders); // Added view orders button
         string1EditText = findViewById(R.id.ssid);
         string2EditText = findViewById(R.id.password);
         sendButton = findViewById(R.id.sendButton);
 
 
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter(); // Initialize the Bluetooth adapter
         if (bluetoothAdapter == null) {
             Toast.makeText(AdminActivity.this, "Bluetooth is not available", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
-        if (!bluetoothAdapter.isEnabled()) {
+        if (!bluetoothAdapter.isEnabled()) { // If Bluetooth is not enabled, request the user to enable it
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -107,8 +109,9 @@ public class AdminActivity extends AppCompatActivity {
 
     }
 
+    // Method to send data over Bluetooth using the SSID and password
     public void sendData(String string1, String string2) {
-        bluetoothDevice = getPairedDevice();
+        bluetoothDevice = getPairedDevice(); // Find the paired esp32
         if (bluetoothDevice == null) {
             Toast.makeText(AdminActivity.this, "Bluetooth device not found", Toast.LENGTH_SHORT).show();
             return;
@@ -128,27 +131,28 @@ public class AdminActivity extends AppCompatActivity {
 
             // Send data
             OutputStream outputStream = bluetoothSocket.getOutputStream();
-            outputStream.write(string1.getBytes());
-            outputStream.write("\n".getBytes());
-            outputStream.write(string2.getBytes());
+            outputStream.write(string1.getBytes()); // Write the first string
+            outputStream.write("\n".getBytes()); // seperate the strings
+            outputStream.write(string2.getBytes()); // Write the second string
 
-            Toast.makeText(AdminActivity.this, "Data sent", Toast.LENGTH_SHORT).show();
+            Toast.makeText(AdminActivity.this, "Data sent", Toast.LENGTH_SHORT).show(); // Inform the user that data has been sent successfully
         } catch (SecurityException e) {
             e.printStackTrace();
             Toast.makeText(AdminActivity.this, "Bluetooth connect permission required", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(AdminActivity.this, "Error sending data", Toast.LENGTH_SHORT).show();
+            Toast.makeText(AdminActivity.this, "Error sending data", Toast.LENGTH_SHORT).show(); // Notify the user if there is an error during data transmission
         }
     }
 
 
+    // Callback method to handle permission request results
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_ACCESS_FINE_LOCATION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getPairedDevice();
+                getPairedDevice(); // attempt to get the paired Bluetooth device
             } else {
                 Toast.makeText(AdminActivity.this, "Permission required", Toast.LENGTH_SHORT).show();
             }
@@ -161,6 +165,7 @@ public class AdminActivity extends AppCompatActivity {
         }
     }
 
+    // Method to retrieve the paired esp32
     public BluetoothDevice getPairedDevice() {
         // Check for BLUETOOTH_CONNECT permission
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
@@ -168,6 +173,7 @@ public class AdminActivity extends AppCompatActivity {
             return null;
         }
 
+        // Retrieve the set of paired Bluetooth devices
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
         if (pairedDevices != null && !pairedDevices.isEmpty()) {
             for (BluetoothDevice device : pairedDevices) {

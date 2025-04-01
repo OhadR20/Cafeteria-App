@@ -46,7 +46,7 @@ public class HomeFragment extends Fragment implements IProductLoadListener, ICar
 
     IProductLoadListener productLoadListener;
     ICartLoadListener cartLoadListener;
-    private String currentuser = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    private String currentuser = FirebaseAuth.getInstance().getCurrentUser().getUid(); // Get the current user's unique ID from Firebase Authentication
 
     @Override
     public void onStart() {
@@ -64,7 +64,7 @@ public class HomeFragment extends Fragment implements IProductLoadListener, ICar
 
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void onUpdateCart(MyUpdateCartEvent event) {
-        countCartItem();
+        countCartItem(); // When a cart update event is received, recount the cart items
     }
 
     @Nullable
@@ -72,14 +72,15 @@ public class HomeFragment extends Fragment implements IProductLoadListener, ICar
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         init(view);
-        loadProductFromFirebase();
-        countCartItem();
+        loadProductFromFirebase(); // Load the products from Firebase into the RecyclerView
+        countCartItem(); // Count the number of items in the cart
         return view;
     }
 
+    // Method to load products from Firebase Realtime Database
     private void loadProductFromFirebase() {
-        List<ProductModel> productModels = new ArrayList<>();
-        FirebaseDatabase.getInstance()
+        List<ProductModel> productModels = new ArrayList<>(); // Create a list to hold the ProductModel objects
+        FirebaseDatabase.getInstance() // Get a reference to the "products" in the Firebase database
                 .getReference("products")
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
@@ -88,7 +89,7 @@ public class HomeFragment extends Fragment implements IProductLoadListener, ICar
                             for (DataSnapshot productSnapshot : snapshot.getChildren()) {
                                 ProductModel productModel = productSnapshot.getValue(ProductModel.class);
                                 productModel.setKey(productSnapshot.getKey());
-                                productModels.add(productModel);
+                                productModels.add(productModel); // Add the product to the list
                             }
                             productLoadListener.onProductLoadSuccess(productModels);
                         } else {
@@ -103,6 +104,7 @@ public class HomeFragment extends Fragment implements IProductLoadListener, ICar
                 });
     }
 
+    // Method to initialize the fragment's UI elements and set up RecyclerView
     private void init(View view) {
         recyclerProducts = view.findViewById(R.id.recycler_products);
         mainLayout = view.findViewById(R.id.mainLayout);
@@ -110,26 +112,28 @@ public class HomeFragment extends Fragment implements IProductLoadListener, ICar
         productLoadListener = this;
         cartLoadListener = this;
 
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 2);
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 2); // Create a GridLayoutManager with 2 columns for the RecyclerView
         recyclerProducts.setLayoutManager(gridLayoutManager);
-        recyclerProducts.addItemDecoration(new SpaceItemDecoration());
+        recyclerProducts.addItemDecoration(new SpaceItemDecoration()); // Add item decoration to the RecyclerView to set spacing between grid items
 
     }
 
     @Override
     public void onProductLoadSuccess(List<ProductModel> productModelList) {
+        // Create an adapter for the RecyclerView using the loaded product list and the cart load listener
         MyProductAdapter adapter = new MyProductAdapter(getContext(), productModelList, cartLoadListener);
         recyclerProducts.setAdapter(adapter);
     }
 
     @Override
     public void onProductLoadFailed(String message) {
-        Snackbar.make(mainLayout, message, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(mainLayout, message, Snackbar.LENGTH_LONG).show(); // Display an error message using a Snackbar
     }
 
     @Override
     public void onCartLoadSuccess(List<CartModel> cartModelList) {
         int cartSum = 0;
+        // Iterate through each cart model and accumulate the total quantity
         for (CartModel cartModel : cartModelList)
             cartSum += cartModel.getQuantity();
         ((MainActivity) getActivity()).showCartBadge(cartSum);
@@ -137,20 +141,21 @@ public class HomeFragment extends Fragment implements IProductLoadListener, ICar
 
     @Override
     public void onCartLoadFailed(String message) {
-        Snackbar.make(mainLayout, message, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(mainLayout, message, Snackbar.LENGTH_LONG).show(); // Display an error message using a Snackbar
     }
 
+    // Method to count the cart items from Firebase Realtime Database
     private void countCartItem() {
-        List<CartModel> cartModels = new ArrayList<>();
-        FirebaseDatabase.getInstance().getReference("Cart")
+        List<CartModel> cartModels = new ArrayList<>(); // Create a list to hold the CartModel objects
+        FirebaseDatabase.getInstance().getReference("Cart") // Access the "Cart" in the Firebase database under the current user's ID
                 .child(currentuser)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         for (DataSnapshot cartSnapshot : snapshot.getChildren()) {
-                            CartModel cartModel = cartSnapshot.getValue(CartModel.class);
+                            CartModel cartModel = cartSnapshot.getValue(CartModel.class); // Convert the snapshot into a CartModel object
                             cartModel.setKey(cartSnapshot.getKey());
-                            cartModels.add(cartModel);
+                            cartModels.add(cartModel); // Add the cart item to the list
                         }
                         cartLoadListener.onCartLoadSuccess(cartModels);
                     }

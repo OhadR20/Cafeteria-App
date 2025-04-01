@@ -49,6 +49,7 @@ public class CartFragment extends Fragment implements ICartLoadListener {
     @BindView(R.id.CheckOut)
     Button checkOutButton;
 
+    // Get the current user's unique ID from Firebase Authentication
     private String currentuser = FirebaseAuth.getInstance().getCurrentUser().getUid();
     private ICartLoadListener cartLoadListener;
 
@@ -68,20 +69,22 @@ public class CartFragment extends Fragment implements ICartLoadListener {
 
     @Subscribe(threadMode = ThreadMode.MAIN, sticky = true)
     public void onUpdateCart(MyUpdateCartEvent event) {
-        loadCartFromFirebase();
+        loadCartFromFirebase(); // Reload the cart from Firebase
     }
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_cart, container, false);
         init(view);
-        loadCartFromFirebase();
+        loadCartFromFirebase(); // Load cart data from Firebase
         return view;
     }
 
+    // Method to load cart items from Firebase Realtime Database
     private void loadCartFromFirebase() {
-        List<CartModel> cartModels = new ArrayList<>();
+        List<CartModel> cartModels = new ArrayList<>(); // Create a list to hold CartModel objects
         FirebaseDatabase.getInstance()
+                // Reference the "Cart" under the current user's ID in Firebase Database
                 .getReference("Cart")
                 .child(currentuser)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
@@ -89,9 +92,9 @@ public class CartFragment extends Fragment implements ICartLoadListener {
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (snapshot.exists()) {
                             for (DataSnapshot cartSnapshot : snapshot.getChildren()) {
-                                CartModel cartModel = cartSnapshot.getValue(CartModel.class);
-                                cartModel.setKey(cartSnapshot.getKey());
-                                cartModels.add(cartModel);
+                                CartModel cartModel = cartSnapshot.getValue(CartModel.class); // Convert snapshot into a CartModel object
+                                cartModel.setKey(cartSnapshot.getKey()); // Set the unique key for the cart item
+                                cartModels.add(cartModel); // Add the cart item to the list
                             }
                             cartLoadListener.onCartLoadSuccess(cartModels);
                         } else {
@@ -106,6 +109,7 @@ public class CartFragment extends Fragment implements ICartLoadListener {
                 });
     }
 
+    // Initialize UI components and setup the RecyclerView and checkout button
     private void init(View view) {
         recyclerCart = view.findViewById(R.id.recycler_cart);
         mainLayout = view.findViewById(R.id.mainLayout);
@@ -125,13 +129,17 @@ public class CartFragment extends Fragment implements ICartLoadListener {
         });
     }
 
+    // method for when cart loading is successful
     @Override
     public void onCartLoadSuccess(List<CartModel> cartModelList) {
         double sum = 0;
+        // Calculate the total price of all cart items
         for (CartModel cartModel : cartModelList) {
             sum += cartModel.getTotalPrice();
         }
+        // Display the total price
         txtTotal.setText(new StringBuilder("₪").append(sum));
+        // Create and set an adapter for the RecyclerView with the list of cart items
         MyCartAdapter adapter = new MyCartAdapter(getContext(), cartModelList);
         recyclerCart.setAdapter(adapter);
     }
@@ -141,30 +149,32 @@ public class CartFragment extends Fragment implements ICartLoadListener {
         Snackbar.make(mainLayout, message, Snackbar.LENGTH_LONG).show();
     }
 
-
+    // Method to create an order from the current cart items
     private void createOrder() {
-        FirebaseDatabase.getInstance()
+        FirebaseDatabase.getInstance() // Reference the user's cart in Firebase Database
                 .getReference("Cart")
                 .child(currentuser)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            List<CartModel> cartModels = new ArrayList<>();
-                            for (DataSnapshot cartSnapshot : snapshot.getChildren()) {
+                        if (snapshot.exists()) { // Check if the cart has items
+                            List<CartModel> cartModels = new ArrayList<>(); // Create a list to store cart items
+                            for (DataSnapshot cartSnapshot : snapshot.getChildren()) { // Iterate over each cart item snapshot
                                 CartModel cartModel = cartSnapshot.getValue(CartModel.class);
-                                cartModel.setKey(cartSnapshot.getKey());
+                                cartModel.setKey(cartSnapshot.getKey()); // Set the unique key for each cart item
                                 cartModels.add(cartModel);
                             }
 
+                            // Reference the "Orders" in Firebase Database
                             DatabaseReference ordersRef = FirebaseDatabase.getInstance().getReference("Orders");
                             DatabaseReference userOrdersRef = FirebaseDatabase.getInstance().getReference("users").child(currentuser).child("orders");
 
+                            // Fetch existing orders to generate a unique order number
                             ordersRef.addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot orderSnapshot) {
-                                    long orderNumber = generateUniqueOrderNumber(orderSnapshot);
-                                    DatabaseReference newOrderRef = ordersRef.child(String.valueOf(orderNumber));
+                                    long orderNumber = generateUniqueOrderNumber(orderSnapshot); // Generate a unique order number
+                                    DatabaseReference newOrderRef = ordersRef.child(String.valueOf(orderNumber)); // Create a new order node with the unique order number
 
                                     // Save each cart item starting with index 0
                                     for (int i = 0; i < cartModels.size(); i++) {
@@ -218,13 +228,16 @@ public class CartFragment extends Fragment implements ICartLoadListener {
 
 
 
+    // method to generate a unique order number based on existing orders
     private long generateUniqueOrderNumber(DataSnapshot orderSnapshot) {
-        Set<Long> existingOrderNumbers = new HashSet<>();
+        Set<Long> existingOrderNumbers = new HashSet<>(); // Create a set to store all existing order numbers
+        // Iterate over each order in the snapshot and add its key
         for (DataSnapshot snapshot : orderSnapshot.getChildren()) {
             existingOrderNumbers.add(Long.parseLong(snapshot.getKey()));
         }
         long orderNumber;
         Random random = new Random();
+        // Generate a random 11-digit order number that is not already in use
         do {
             orderNumber = 10000000000L + (long) (random.nextDouble() * 89999999999L);
         } while (existingOrderNumbers.contains(orderNumber));

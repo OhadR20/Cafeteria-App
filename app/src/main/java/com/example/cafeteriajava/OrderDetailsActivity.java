@@ -34,24 +34,29 @@ public class OrderDetailsActivity extends AppCompatActivity {
 
         orderDetailsListView = findViewById(R.id.orderDetailsListView);
 
+        // Create a SimpleAdapter to map data from orderDetailsList to layout views
+        // "productName" and "productQuantity" are keys in the map
         adapter = new SimpleAdapter(this, orderDetailsList, R.layout.order_details_list_item,
-                new String[]{"productName", "productQuantity"},
+                new String[]{"productName", "productQuantity"}, // Keys in the map to retrieve data
                 new int[]{R.id.productName, R.id.productQuantity});
 
         orderDetailsListView.setAdapter(adapter);
 
+        // Retrieve the orderId passed via intent from the previous activity
         String orderId = getIntent().getStringExtra("orderId");
         if (orderId != null) {
             loadOrderDetails(orderId);
         }
     }
 
+    // Method to load order details from Firebase for an orderId
     private void loadOrderDetails(String orderId) {
+        // Create a reference to the specific order in Firebase under "Orders"
         DatabaseReference orderRef = FirebaseDatabase.getInstance().getReference("Orders").child(orderId);
         orderRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                orderDetailsList.clear();
+                orderDetailsList.clear(); // Clear the current list to refresh the data
                 Log.d("OrderDetailsActivity", "Loading details for Order ID: " + orderId);
 
                 for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
@@ -66,10 +71,10 @@ public class OrderDetailsActivity extends AppCompatActivity {
                         // Parse the cart item
                         CartModel item = itemSnapshot.getValue(CartModel.class);
                         if (item != null) {
-                            Map<String, String> orderDetail = new HashMap<>();
-                            orderDetail.put("productName", item.getName());
-                            orderDetail.put("productQuantity", "כמות: " + item.getQuantity());
-                            orderDetailsList.add(orderDetail);
+                            Map<String, String> orderDetail = new HashMap<>(); // Create a map to store the product details
+                            orderDetail.put("productName", item.getName()); // Map the product name to the key "productName"
+                            orderDetail.put("productQuantity", "כמות: " + item.getQuantity()); // Map the product quantity to the key "productQuantity"
+                            orderDetailsList.add(orderDetail); // Add this map to the order details list
                         } else {
                             Log.e("OrderDetailsActivity", "CartModel is null for key: " + itemSnapshot.getKey());
                         }
@@ -84,6 +89,7 @@ public class OrderDetailsActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                // Log and display an error message if loading order details fails
                 Log.e("OrderDetailsActivity", "Failed to load order details: " + error.getMessage());
                 Toast.makeText(OrderDetailsActivity.this, "Failed to load order details", Toast.LENGTH_SHORT).show();
             }
