@@ -15,7 +15,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-
+//Not in use
 public class FirebaseOrderListenerService extends Service {
     private DatabaseReference ordersRef; // Reference to the user's orders in the Firebase database
     private ValueEventListener orderCompleteListener;

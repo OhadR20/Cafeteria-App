@@ -4,7 +4,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import androidx.core.app.NotificationCompat;
-
+//Not in use
 public class NotificationHelper {
 
     // method to show a notification when an order is completed
